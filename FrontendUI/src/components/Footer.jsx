@@ -221,7 +221,7 @@ export default function Footer() {
 // };
 
 <footer className="border-t bg-muted/50">
-  <div className="w-full max-w-screen-xl p-4 py-6 mx-auto lg:py-8 bg-slate-100">
+  <div className="w-full p-4 py-6 mx-auto lg:py-8 bg-slate-100">
     <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
       {/* Brand Info */}
       <div>

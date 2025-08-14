@@ -10,41 +10,114 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { api } from "../../services/api";
+import BookingModal from "../BookingModal";
 
 const FindServices = () => {
-  const [workers] = useState([
-    { id: 1, name: "Ravi Kumar", workType: "Electrician", distance: 2, location: "Bangalore", updatedAt: "2025-08-10" },
-    { id: 2, name: "Anita Sharma", workType: "Plumber", distance: 5, location: "Bangalore", updatedAt: "2025-08-09" },
-    { id: 3, name: "Suresh Patel", workType: "Painter", distance: 1, location: "Bangalore", updatedAt: "2025-08-11" },
-    { id: 4, name: "Meena Rao", workType: "Carpenter", distance: 3, location: "Bangalore", updatedAt: "2025-08-08" },
-    { id: 5, name: "Kiran Reddy", workType: "Electrician", distance: 8, location: "Bangalore", updatedAt: "2025-08-07" },
-  ]);
-  const [filteredWorkers, setFilteredWorkers] = useState([]);
+  const { user } = useAuth();
+  const [providers, setProviders] = useState([]);
+  const [filteredProviders, setFilteredProviders] = useState([]);
   const [selectedProfession, setSelectedProfession] = useState("");
   const [maxDistance, setMaxDistance] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const navigate = useNavigate();
 
-  const professions = ["All", ...new Set(workers.map((w) => w.workType))];
+  const professions = ["All", "Electrician", "Plumber", "Painter", "Cook", "Driver", "Cleaner", "Gardener", "Tutor"];
 
   useEffect(() => {
-    let data = [...workers];
+    fetchProviders();
+  }, []);
+
+  const fetchProviders = async () => {
+    try {
+      setLoading(true);
+      const data = await api.providers.getAll();
+      setProviders(data);
+      setFilteredProviders(data);
+    } catch (error) {
+      console.error("Error fetching providers:", error);
+      setError("Failed to load service providers. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let data = [...providers];
 
     if (selectedProfession && selectedProfession !== "All") {
-      data = data.filter((w) => w.workType === selectedProfession);
+      data = data.filter((p) => p.service_type === selectedProfession);
     }
 
-    data = data.filter((w) => w.distance <= maxDistance);
-
     if (searchTerm.trim() !== "") {
-      data = data.filter((w) =>
-        w.name.toLowerCase().includes(searchTerm.toLowerCase())
+      data = data.filter((p) =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.location.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    data.sort((a, b) => a.distance - b.distance);
-    setFilteredWorkers(data);
-  }, [selectedProfession, maxDistance, searchTerm, workers]);
+    // Sort by availability first, then by name
+    data.sort((a, b) => {
+      if (a.is_available !== b.is_available) {
+        return b.is_available - a.is_available; // Available first
+      }
+      return a.name.localeCompare(b.name);
+    });
+    
+    setFilteredProviders(data);
+  }, [selectedProfession, maxDistance, searchTerm, providers]);
+
+  const handleBookNow = (provider) => {
+    if (!user) {
+      navigate('/SignIn');
+      return;
+    }
+    
+    if (user.user_type !== 'customer') {
+      alert('Only customers can book services. Please login with a customer account.');
+      return;
+    }
+    
+    setSelectedProvider(provider);
+    setShowBookingModal(true);
+  };
+
+  const handleBookingCreated = () => {
+    alert('Booking created successfully! The provider will contact you soon.');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 border-4 border-blue-200 border-solid rounded-full border-t-blue-500 animate-spin"></div>
+          <p className="text-gray-600">Loading service providers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl px-4 py-10 mx-auto text-center">
+        <div className="p-6 text-red-700 bg-red-100 border border-red-400 rounded-lg">
+          <h2 className="mb-2 text-xl font-semibold">Error Loading Services</h2>
+          <p>{error}</p>
+          <button
+            onClick={fetchProviders}
+            className="px-4 py-2 mt-4 font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl px-4 py-10 mx-auto">
@@ -54,7 +127,7 @@ const FindServices = () => {
       <div className="flex justify-center mb-6">
         <input
           type="text"
-          placeholder="Search for a worker..."
+          placeholder="Search for a service provider..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full max-w-xl p-3 border rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -65,11 +138,11 @@ const FindServices = () => {
       <div className="flex flex-wrap justify-center gap-6 mb-8">
         {/* Profession Filter */}
         <div>
-          <label className="block mb-2 font-semibold">Select Profession</label>
+          <label className="block mb-2 font-semibold">Select Service</label>
           <select
             value={selectedProfession}
             onChange={(e) => setSelectedProfession(e.target.value)}
-            className="p-2 border rounded-lg"
+            className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {professions.map((prof, index) => (
               <option key={index} value={prof}>
@@ -105,36 +178,92 @@ const FindServices = () => {
           style={{ border: 0 }}
           allowFullScreen=""
           loading="lazy"
+          className="rounded-lg shadow-md"
         ></iframe>
       </div>
 
-      {/* Worker Cards */}
-      <h2 className="mb-4 text-2xl font-semibold">Available Workers</h2>
-      {filteredWorkers.length === 0 ? (
-        <p className="text-gray-500">No workers found for the selected filters.</p>
+      {/* Service Provider Cards */}
+      <h2 className="mb-4 text-2xl font-semibold">
+        Available Service Providers ({filteredProviders.length})
+      </h2>
+      
+      {filteredProviders.length === 0 ? (
+        <div className="p-8 text-center">
+          {providers.length === 0 ? (
+            <div>
+              <p className="text-gray-500 mb-4">No service providers registered yet.</p>
+              <button
+                onClick={() => navigate("/SignIn")}
+                className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                Register as Service Provider
+              </button>
+            </div>
+          ) : (
+            <p className="text-gray-500">No service providers found for the selected filters.</p>
+          )}
+        </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredWorkers.map((worker) => (
+          {filteredProviders.map((provider) => (
             <div
-              key={worker.id}
-              className="p-6 transition bg-white shadow rounded-xl hover:shadow-lg"
+              key={provider.id}
+              className={`p-6 transition bg-white shadow rounded-xl hover:shadow-lg border-l-4 ${
+                provider.is_available ? 'border-green-500' : 'border-gray-300'
+              }`}
             >
-              <h3 className="text-xl font-semibold">{worker.name}</h3>
-              <p className="text-gray-600">{worker.workType}</p>
-              <p className="text-gray-500">📍 {worker.location}</p>
-              <p className="text-gray-500">Distance: {worker.distance} km</p>
-              <p className="text-sm text-gray-400">
-                Last Updated: {worker.updatedAt}
-              </p>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xl font-semibold">{provider.name}</h3>
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  provider.is_available 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {provider.is_available ? 'Available' : 'Busy'}
+                </span>
+              </div>
+              
+              <p className="text-blue-600 font-medium mb-2">{provider.service_type}</p>
+              <p className="text-gray-600 mb-2">📍 {provider.location}</p>
+              <p className="text-gray-600 mb-2">📞 {provider.phone}</p>
+              
+              {provider.hourly_rate && (
+                <p className="text-gray-800 font-semibold mb-2">
+                  ₹{provider.hourly_rate}/hour
+                </p>
+              )}
+              
+              {provider.bio && (
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{provider.bio}</p>
+              )}
+              
               <button
-                onClick={() => navigate("/register/customer")}
-                className="px-4 py-2 mt-3 text-white transition bg-blue-600 shadow rounded-xl hover:bg-blue-700"
+                onClick={() => handleBookNow(provider)}
+                disabled={!provider.is_available}
+                className={`w-full px-4 py-2 mt-3 text-white transition rounded-lg ${
+                  provider.is_available
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-gray-400 cursor-not-allowed'
+                }`}
               >
-                Book now
+                {provider.is_available ? 'Book Now' : 'Currently Busy'}
               </button>
             </div>
           ))}
         </div>
+      )}
+      
+      {/* Booking Modal */}
+      {selectedProvider && (
+        <BookingModal
+          provider={selectedProvider}
+          isOpen={showBookingModal}
+          onClose={() => {
+            setShowBookingModal(false);
+            setSelectedProvider(null);
+          }}
+          onBookingCreated={handleBookingCreated}
+        />
       )}
     </div>
   );

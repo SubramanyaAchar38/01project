@@ -1,15 +1,17 @@
 
 
 import React, { useState } from "react";
-import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("user");
+  const { login, register } = useAuth();
+  
+  const [activeTab, setActiveTab] = useState("customer");
   const [showLogin, setShowLogin] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const [registerData, setRegisterData] = useState({
     name: "",
@@ -22,7 +24,7 @@ const SignIn = () => {
   });
 
   const [loginData, setLoginData] = useState({
-    phone: "",
+    email: "",
     password: "",
   });
 
@@ -36,6 +38,9 @@ const SignIn = () => {
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
+
     const {
       name,
       phone,
@@ -47,111 +52,111 @@ const SignIn = () => {
     } = registerData;
 
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match!");
+      setError("Passwords do not match!");
+      setLoading(false);
       return;
     }
 
     try {
-      const endpoint =
-        activeTab === "user"
-          ? "http://localhost:5000/api/users/register"
-          : "http://localhost:5000/api/providers/register";
-
-      const payload =
-        activeTab === "user"
-          ? { name, phone, email, location, password }
-          : { name, phone, email, location, service, password };
-
-      const res = await axios.post(endpoint, payload);
-
-      const user = res.data.user || {
-        _id: res.data._id,
-        name: res.data.name,
-        phone: res.data.phone,
+      const userData = {
+        email,
+        password,
+        name,
+        phone,
+        user_type: activeTab
       };
 
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", res.data.token);
-
-      toast.success("Registration successful!");
-
-      if (activeTab === "user") {
-        navigate("/available-services");
+      const response = await register(userData);
+      
+      // If provider, create provider profile
+      if (activeTab === "provider") {
+        // This will need to be implemented after successful registration
+        // For now, just navigate to provider profile page
+        navigate("/ProviderProfile");
       } else {
-        navigate("/provider-profile");
+        navigate("/");
       }
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Registration failed. Try again."
-      );
+      setError(error.message || "Registration failed. Try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    const { phone, password } = loginData;
+    setLoading(true);
+    setError("");
 
     try {
-      const endpoint =
-        activeTab === "user"
-          ? "http://localhost:5000/api/users/login"
-          : "http://localhost:5000/api/providers/login";
-
-      const res = await axios.post(endpoint, { phone, password });
-
-      const user = res.data.user || {
-        _id: res.data._id,
-        name: res.data.name,
-        phone: res.data.phone,
-      };
-
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", res.data.token);
-
-      toast.success("Login successful!");
-
-      if (activeTab === "user") {
-        navigate("/available-services");
-      } else {
-        navigate("/provider-profile");
-      }
+      await login(loginData.email, loginData.password);
+      navigate("/");
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Login failed. Please try again."
-      );
+      setError(error.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const resetForm = () => {
+    setRegisterData({
+      name: "",
+      phone: "",
+      email: "",
+      location: "",
+      service: "",
+      password: "",
+      confirmPassword: "",
+    });
+    setLoginData({ email: "", password: "" });
+    setError("");
+  };
+
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    resetForm();
+  };
+
+  const switchToLogin = (show) => {
+    setShowLogin(show);
+    resetForm();
+  };
+
   return (
-    <div className="max-w-md p-6 mx-auto mt-10 bg-white border shadow rounded-x1">
-      <ToastContainer />
+    <div className="max-w-md p-6 mx-auto mt-10 bg-white border shadow rounded-xl">
       <div className="flex justify-center mb-4">
         <button
-          onClick={() => setActiveTab("user")}
+          onClick={() => switchTab("customer")}
           className={`px-4 py-2 font-semibold rounded-l ${
-            activeTab === "user"
+            activeTab === "customer"
               ? "bg-indigo-600 text-white"
               : "bg-gray-200 text-gray-800"
           }`}
         >
-          Register as Customer
+          Customer
         </button>
         <button
-          onClick={() => setActiveTab("provider")}
+          onClick={() => switchTab("provider")}
           className={`px-4 py-2 font-semibold rounded-r ${
             activeTab === "provider"
               ? "bg-indigo-600 text-white"
               : "bg-gray-200 text-gray-800"
           }`}
         >
-          Register as Worker
+          Service Provider
         </button>
       </div>
+
+      {error && (
+        <div className="p-3 mb-4 text-red-700 bg-red-100 border border-red-400 rounded">
+          {error}
+        </div>
+      )}
 
       {!showLogin ? (
         <>
           <h2 className="mb-4 text-xl font-bold text-center">
-            {activeTab === "user" ? "User" : "Provider"} Registration
+            {activeTab === "customer" ? "Customer" : "Provider"} Registration
           </h2>
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <input
@@ -160,7 +165,7 @@ const SignIn = () => {
               placeholder="Full Name"
               value={registerData.name}
               onChange={handleRegisterChange}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
             <input
@@ -169,7 +174,7 @@ const SignIn = () => {
               placeholder="Phone"
               value={registerData.phone}
               onChange={handleRegisterChange}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
             <input
@@ -178,7 +183,7 @@ const SignIn = () => {
               placeholder="Email"
               value={registerData.email}
               onChange={handleRegisterChange}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
             <input
@@ -187,19 +192,27 @@ const SignIn = () => {
               placeholder="Location"
               value={registerData.location}
               onChange={handleRegisterChange}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
             {activeTab === "provider" && (
-              <input
-                type="text"
+              <select
                 name="service"
-                placeholder="Service (e.g., Electrician)"
                 value={registerData.service}
                 onChange={handleRegisterChange}
-                className="w-full px-4 py-2 border rounded"
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
-              />
+              >
+                <option value="">Select Service Type</option>
+                <option value="Electrician">Electrician</option>
+                <option value="Plumber">Plumber</option>
+                <option value="Painter">Painter</option>
+                <option value="Cook">Cook</option>
+                <option value="Driver">Driver</option>
+                <option value="Cleaner">Cleaner</option>
+                <option value="Gardener">Gardener</option>
+                <option value="Tutor">Tutor</option>
+              </select>
             )}
             <input
               type="password"
@@ -207,8 +220,9 @@ const SignIn = () => {
               placeholder="Password"
               value={registerData.password}
               onChange={handleRegisterChange}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
+              minLength={6}
             />
             <input
               type="password"
@@ -216,20 +230,22 @@ const SignIn = () => {
               placeholder="Confirm Password"
               value={registerData.confirmPassword}
               onChange={handleRegisterChange}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
+              minLength={6}
             />
             <button
               type="submit"
-              className="w-full py-2 font-semibold text-white bg-indigo-600 rounded hover:bg-indigo-700"
+              disabled={loading}
+              className="w-full py-2 font-semibold text-white bg-indigo-600 rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Register
+              {loading ? "Registering..." : "Register"}
             </button>
           </form>
           <p className="mt-4 text-sm text-center">
             Already registered?{" "}
             <span
-              onClick={() => setShowLogin(true)}
+              onClick={() => switchToLogin(true)}
               className="text-indigo-600 cursor-pointer hover:underline"
             >
               Login
@@ -238,17 +254,15 @@ const SignIn = () => {
         </>
       ) : (
         <>
-          <h2 className="mb-4 text-xl font-bold text-center">
-            {activeTab === "user" ? "User" : "Provider"} Login
-          </h2>
+          <h2 className="mb-4 text-xl font-bold text-center">Login</h2>
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <input
-              type="tel"
-              name="phone"
-              placeholder="Phone"
-              value={loginData.phone}
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={loginData.email}
               onChange={handleLoginChange}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
             <input
@@ -257,20 +271,21 @@ const SignIn = () => {
               placeholder="Password"
               value={loginData.password}
               onChange={handleLoginChange}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
             <button
               type="submit"
-              className="w-full py-2 font-semibold text-white bg-indigo-600 rounded hover:bg-indigo-700"
+              disabled={loading}
+              className="w-full py-2 font-semibold text-white bg-indigo-600 rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
           <p className="mt-4 text-sm text-center">
             New here?{" "}
             <span
-              onClick={() => setShowLogin(false)}
+              onClick={() => switchToLogin(false)}
               className="text-indigo-600 cursor-pointer hover:underline"
             >
               Register
