@@ -15,6 +15,10 @@ import { useNavigate } from "react-router-dom";
 const HowItWorks = () => {
   const navigate = useNavigate();
 
+   const handleExploreClick = () => {
+    navigate("/ProviderProfile");
+  };
+
   const steps = [
     {
       title: "1. Sign Up",
@@ -66,8 +70,8 @@ const HowItWorks = () => {
 
       <div className="flex justify-center gap-6 mt-12">
         <button
-          onClick={() => navigate("/register/provider")}
-          className="px-6 py-3 text-white transition bg-green-600 shadow rounded-xl hover:bg-green-700"
+          onClick={handleExploreClick}
+          className="px-6 py-3 text-white transition bg-purple-600 shadow rounded-xl hover:bg-purple-700"
         >
           Register as Provider
         </button>
