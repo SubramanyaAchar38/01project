@@ -64,19 +64,31 @@ const HowItWorks = () => {
         ))}
       </div>
 
-      <div className="flex justify-center gap-6 mt-12">
+      <div className="flex flex-col sm:flex-row justify-center gap-6 mt-12">
         <button
-          onClick={() => navigate("/register/provider")}
+          onClick={() => navigate("/provider-signup")}
           className="px-6 py-3 text-white transition bg-green-600 shadow rounded-xl hover:bg-green-700"
         >
           Register as Provider
         </button>
         <button
-          onClick={() => navigate("/register/customer")}
+          onClick={() => navigate("/customer-signup")}
           className="px-6 py-3 text-white transition bg-blue-600 shadow rounded-xl hover:bg-blue-700"
         >
           Register as Customer
         </button>
+      </div>
+      
+      <div className="text-center mt-6">
+        <p className="text-gray-600">
+          Already have an account?{' '}
+          <button
+            onClick={() => navigate('/SignIn')}
+            className="text-purple-600 hover:underline font-medium"
+          >
+            Sign in here
+          </button>
+        </p>
       </div>
     </div>
   );

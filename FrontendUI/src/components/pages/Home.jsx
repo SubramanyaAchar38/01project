@@ -34,7 +34,15 @@ export default function Home() {
     </div> */}
 
 
-        <div className="px-4 mt-16 text-gray-800">
+        <div
+          className="px-4 mt-16 text-gray-800"
+          style={{
+            height: '80vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
       {/* Hero Section */}
       <div className="flex flex-col items-center text-center">
         <h1 className="text-4xl font-extrabold text-purple-600">ALL IN ONE</h1>
@@ -46,7 +54,7 @@ export default function Home() {
           Let's start with a quick product tour and have you up and running in no time!
         </p>
         <Link
-          to="/find-services"
+          to="/FindServices"
           className="px-6 py-2 text-white bg-purple-600 rounded-full shadow-lg hover:bg-purple-700"
         >
           Explore Services
