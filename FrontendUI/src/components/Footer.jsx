@@ -240,17 +240,17 @@ export default function Footer() {
           <h4 className="text-sm font-semibold">Platform</h4>
           <ul className="mt-3 space-y-2">
             <li>
-              <Link to="/how-it-works" className="text-sm text-muted-foreground hover:text-primary">
+              <Link to="/HowItWorks" className="text-sm text-muted-foreground hover:text-primary">
                 How It Works
               </Link>
             </li>
             <li>
-              <Link to="/search" className="text-sm text-muted-foreground hover:text-primary">
+              <Link to="/FindServices" className="text-sm text-muted-foreground hover:text-primary">
                 Find Services
               </Link>
             </li>
             <li>
-              <Link to="/register-provider" className="text-sm text-muted-foreground hover:text-primary">
+              <Link to="/ProviderSignUp" className="text-sm text-muted-foreground hover:text-primary">
                 Join as Provider
               </Link>
             </li>
@@ -262,12 +262,12 @@ export default function Footer() {
           <h4 className="text-sm font-semibold">Company</h4>
           <ul className="mt-3 space-y-2">
             <li>
-              <Link to="/about-us" className="text-sm text-muted-foreground hover:text-primary">
+              <Link to="/HowItWorks" className="text-sm text-muted-foreground hover:text-primary">
                 About Us
               </Link>
             </li>
             <li>
-              <Link to="/contact" className="text-sm text-muted-foreground hover:text-primary">
+              <Link to="/ContactUs" className="text-sm text-muted-foreground hover:text-primary">
                 Contact
               </Link>
             </li>
