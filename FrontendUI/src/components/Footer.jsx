@@ -289,8 +289,8 @@ export default function Footer() {
       <div>
         <h4 className="text-sm font-semibold">Contact Us</h4>
         <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-          <li>Email: contact@allinone.com</li>
-          <li>Phone: +1 (123) 456-7890</li>
+          <li>Email: allinone38.2025@gmail.com</li>
+          <li>Phone: +91 8618792971</li>
           <li>Address: Navilgone, Honnavar, PO: 581 338</li>
         </ul>
       </div>
