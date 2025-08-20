@@ -1,71 +1,52 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
-const AuthContext = createContext();
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// ✅ --- THIS IS THE FIX ---
+// This line MUST be here, before the AuthProvider function.
+// It creates the context that the provider will use.
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const isAuthenticated = !!token;
 
   useEffect(() => {
-    // Check if user is already logged in on app start
-    const savedUser = authAPI.getCurrentUser();
-    if (savedUser) {
-      setUser(savedUser);
+    if (token) {
+      try {
+        const decodedUser = jwtDecode(token).user;
+        setUser(decodedUser);
+        axios.defaults.headers.common['x-auth-token'] = token;
+      } catch (error) {
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+      }
     }
-    setIsLoading(false);
-  }, []);
+  }, [token]);
 
   const login = async (email, password) => {
-    try {
-      const response = await authAPI.login(email, password);
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      setUser(response.user);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const register = async (userData) => {
-    try {
-      const response = await authAPI.register(userData);
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+    localStorage.setItem('token', res.data.token);
+    setToken(res.data.token);
   };
 
   const logout = () => {
-    authAPI.logout();
+    localStorage.removeItem('token');
     setUser(null);
+    setToken(null);
+    delete axios.defaults.headers.common['x-auth-token'];
   };
 
-  const value = {
-    user,
-    login,
-    register,
-    logout,
-    isAuthenticated: !!user,
-    isLoading,
-  };
+  const value = { user, token, isAuthenticated, login, logout };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  // This line USES the context. It needs the line above to exist first.
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  return useContext(AuthContext);
 };

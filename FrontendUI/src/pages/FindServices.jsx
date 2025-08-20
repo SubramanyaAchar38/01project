@@ -8,11 +8,11 @@
 
 // export default FindServices
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { api } from "../../services/api";
-import BookingModal from "../BookingModal";
+import BookingModal from "../components/BookingModal";
+import { useAuth } from "../contexts/AuthContext";
+import { api } from "../services/api";
 
 const FindServices = () => {
   const { user } = useAuth();
